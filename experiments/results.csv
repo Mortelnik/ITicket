@@ -1,6 +1,6 @@
 experiment,description,val_macro_f1,val_weighted_f1,val_accuracy,fit_seconds
-tfidf_wordchar_svc_tuned,"TF-IDF (слова+символы) + LinearSVC, GridSearchCV(cv=3) по C",0.6188,0.636,0.6369,359.87
-tfidf_wordchar_svc,TF-IDF (слова + символьные 3-5 граммы) + LinearSVC,0.6043,0.618,0.618,36.66
-tfidf_wordchar_logreg,TF-IDF (слова + символьные 3-5 граммы) + LogisticRegression,0.4909,0.4988,0.4972,65.61
-tfidf_word_logreg,"TF-IDF (слова, 1-2 граммы) + LogisticRegression",0.4689,0.4806,0.4795,15.86
-baseline_dummy,DummyClassifier(most_frequent) — нижняя граница качества,0.0453,0.1323,0.2924,0.01
+tfidf_wordchar_svc_tuned,"TF-IDF (слова+символы) + LinearSVC, GridSearchCV(cv=3) по C",0.6188,0.636,0.6369,154.84
+tfidf_wordchar_svc,TF-IDF (слова + символьные 3-5 граммы) + LinearSVC,0.6043,0.618,0.618,27.58
+tfidf_wordchar_logreg,TF-IDF (слова + символьные 3-5 граммы) + LogisticRegression,0.4909,0.4988,0.4972,60.9
+tfidf_word_logreg,"TF-IDF (слова, 1-2 граммы) + LogisticRegression",0.4689,0.4806,0.4795,9.41
+baseline_dummy,DummyClassifier(most_frequent) — нижняя граница качества,0.0453,0.1323,0.2924,0.0

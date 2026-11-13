@@ -53,6 +53,8 @@ HTML_PAGE = """<!DOCTYPE html>
   }
   button:hover { background: var(--accent-dark); }
   button:disabled { opacity: .6; cursor: wait; }
+  .examples { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  .examples button { width: auto; margin: 0; padding: 8px 12px; font-size: 13px; }
   /* чат */
   #chat { margin-top: 20px; display: flex; flex-direction: column; gap: 10px; }
   .msg { max-width: 85%; padding: 10px 14px; border-radius: 12px; font-size: 15px; line-height: 1.45; }
@@ -68,21 +70,38 @@ HTML_PAGE = """<!DOCTYPE html>
 <div class="shell">
   <div class="brand"><span class="dot"></span> ticket-router</div>
   <h1>Демо: автоматическая маршрутизация тикетов</h1>
-  <p class="sub">Введите обращение — модель определит отдел (queue) и «переключит» чат на него.</p>
+  <p class="sub">Учебный прототип: модель предлагает очередь поддержки по тексту на английском или немецком (EN/DE).</p>
 
   <div class="card">
     <label for="subject">Тема обращения</label>
-    <input id="subject" type="text" placeholder="Например: Login failed">
+    <input id="subject" type="text" maxlength="300" placeholder="Например: Login failed">
     <label for="body">Текст обращения</label>
-    <textarea id="body" placeholder="Опишите проблему: Cannot log into my account, error 500 since yesterday"></textarea>
+    <textarea id="body" maxlength="20000" placeholder="Опишите проблему на EN/DE: Cannot log into my account, error 500"></textarea>
+    <p class="hint">Попробуйте готовое обращение:</p>
+    <div class="examples">
+      <button type="button" onclick="loadExample(0)">Вход в аккаунт</button>
+      <button type="button" onclick="loadExample(1)">Оплата</button>
+      <button type="button" onclick="loadExample(2)">Возврат товара</button>
+    </div>
     <button id="send" onclick="sendTicket()">Отправить в поддержку</button>
-    <p class="hint">Демо использует тот же эндпоинт <code>POST /predict</code>, что и боевой API. Модель: TF-IDF + LinearSVC.</p>
+    <p class="hint">Русский язык не поддерживается. Модель: TF-IDF + LinearSVC; вероятность ответа не вычисляется. До 300 символов в теме и 20 000 в тексте.</p>
+    <p class="hint">Это имитация маршрутизации: реальная очередь и чат с оператором не создаются. Предложение модели может быть ошибочным.</p>
   </div>
 
   <div id="chat"></div>
 </div>
 
 <script>
+const examples = [
+  { subject: 'Login failed', body: 'Cannot log into my account, error 500' },
+  { subject: 'Payment problem', body: 'Please refund the duplicate charge on my invoice' },
+  { subject: 'Return request', body: 'I want to return a damaged product and get a replacement' }
+];
+function loadExample(index) {
+  document.getElementById('subject').value = examples[index].subject;
+  document.getElementById('body').value = examples[index].body;
+  document.getElementById('body').focus();
+}
 async function sendTicket() {
   const subject = document.getElementById('subject').value.trim();
   const body = document.getElementById('body').value.trim();
@@ -109,11 +128,14 @@ async function sendTicket() {
     });
     const data = await resp.json();
     if (!resp.ok) {
-      throw new Error(data.detail || 'Ошибка ' + resp.status);
+      const detail = Array.isArray(data.detail)
+        ? data.detail.map(item => item.msg).join('; ')
+        : data.detail;
+      throw new Error(detail || 'Ошибка ' + resp.status);
     }
     chat.insertAdjacentHTML('beforeend',
-      '<div class="msg support">Здравствуйте! Ваше обращение направлено в отдел ' +
-      '<b>' + escapeHtml(data.queue) + '</b>. Специалист уже подключился к чату и поможет вам.</div>');
+      '<div class="msg support">Предложенная очередь: ' +
+      '<b>' + escapeHtml(data.queue) + '</b>. В реальной системе это предложение передаётся диспетчеру обращений.</div>');
   } catch (err) {
     chat.insertAdjacentHTML('beforeend',
       '<div class="msg error">Не удалось получить ответ: ' + escapeHtml(String(err.message)) + '</div>');

@@ -90,3 +90,67 @@ def test_demo_page(client):
     assert "ticket-router" in resp.text
     # страница обращается к тому же эндпоинту предсказания
     assert "/predict" in resp.text
+
+
+@pytest.mark.parametrize(
+    ("body", "expected"),
+    [
+        ("Cannot log into my account, error 500", "IT Support"),
+        ("Please refund the duplicate charge on my invoice", "Billing and Payments"),
+        ("I want to return a damaged product and get a replacement", "Returns and Exchanges"),
+    ],
+)
+def test_saved_model_routes_distinct_topics(client, body, expected):
+    """Контроль артефакта: константная модель должна провалить этот тест."""
+    response = client.post("/predict", json={"body": body})
+    assert response.status_code == 200
+    assert response.json() == {"queue": expected, "confidence": None}
+
+
+@pytest.mark.parametrize("payload", [{}, {"subject": "  "}, {"body": "\n\t"}])
+def test_missing_or_blank_text_is_rejected(client, payload):
+    assert client.post("/predict", json=payload).status_code == 422
+
+
+def test_subject_without_body_is_supported(client):
+    response = client.post("/predict", json={"subject": "Please refund the duplicate charge on my invoice"})
+    assert response.status_code == 200
+    assert response.json()["queue"] == "Billing and Payments"
+
+
+@pytest.mark.parametrize("body", ["Верните деньги", "Не могу войти", "VPN не работает", "🦄🦄🦄"])
+def test_unsupported_text_is_not_routed(client, body):
+    before = client.get("/metrics").json()
+    response = client.post("/predict", json={"body": body})
+    assert response.status_code == 422
+    assert "queue" not in response.json()
+    after = client.get("/metrics").json()
+    assert after["predictions_total"] == before["predictions_total"]
+    assert after["unsupported_texts_total"] == before["unsupported_texts_total"] + 1
+    assert after["rejected_inputs_total"] == before["rejected_inputs_total"] + 1
+
+
+@pytest.mark.parametrize("payload", [{"subject": "x" * 301}, {"body": "x" * 20001}])
+def test_oversized_fields_are_rejected(client, payload):
+    assert client.post("/predict", json=payload).status_code == 422
+
+
+def test_fields_at_length_limit_are_supported(client):
+    response = client.post("/predict", json={"subject": "login " * 50, "body": "invoice " * 2500})
+    assert response.status_code == 200
+
+
+@pytest.mark.parametrize("error", [RuntimeError("inference failure"), ValueError("broken features")])
+def test_metrics_count_unhandled_server_error(client, monkeypatch, error):
+    def fail(*args):
+        raise error
+
+    monkeypatch.setattr(api_module, "predict_queue", fail)
+    before = client.get("/metrics").json()
+    response = client.post("/predict", json={"body": "login failed"})
+    assert response.status_code == 500
+    after = client.get("/metrics").json()
+    assert after["errors_5xx"] == before["errors_5xx"] + 1
+    assert after["predictions_total"] == before["predictions_total"]
+    assert after["latency_sample_size"] > before["latency_sample_size"]
+    assert after["latency_p95_ms"] >= 0

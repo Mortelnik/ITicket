@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import warnings
 from pathlib import Path
 
 import pandas as pd
@@ -49,8 +50,10 @@ def validate(df: pd.DataFrame) -> list[str]:
         raise DataValidationError(f"Отсутствуют колонки: {missing}")
     if df.empty:
         raise DataValidationError("Датасет пуст")
-    if df[TARGET].isna().any():
-        raise DataValidationError("Есть пропуски в целевой переменной queue")
+    if df[TARGET].isna().any() or df[TARGET].astype(str).str.strip().eq("").any():
+        raise DataValidationError("Есть пропуски или пустые значения в целевой переменной queue")
+    if df["language"].isna().any() or df["language"].astype(str).str.strip().eq("").any():
+        raise DataValidationError("Есть пропуски или пустые значения в language")
     n_empty = int((combine_text(df).str.len() == 0).sum())
     if n_empty:
         problems.append(f"пустых текстов (subject+body): {n_empty}")
@@ -62,7 +65,8 @@ def validate(df: pd.DataFrame) -> list[str]:
 
 def load_dataset(path: Path) -> pd.DataFrame:
     df = pd.read_csv(path)
-    validate(df)
+    for problem in validate(df):
+        warnings.warn(problem, UserWarning, stacklevel=2)
     return df
 
 

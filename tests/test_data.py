@@ -76,3 +76,22 @@ def test_splits_are_disjoint_and_cover_all():
     assert not (set(train_df.index) & set(val_df.index))
     assert not (set(train_df.index) & set(test_df.index))
     assert not (set(val_df.index) & set(test_df.index))
+
+
+@pytest.mark.parametrize("column", ["queue", "language"])
+def test_validate_rejects_blank_label_or_language(column):
+    df = _mini_df()
+    df.loc[0, column] = "  "
+    with pytest.raises(DataValidationError):
+        validate(df)
+
+
+def test_dataset_warnings_are_not_silently_ignored(tmp_path):
+    from ticket_router.data import load_dataset
+
+    df = _mini_df()
+    df.loc[0, ["subject", "body"]] = ""
+    path = tmp_path / "tickets.csv"
+    df.to_csv(path, index=False)
+    with pytest.warns(UserWarning, match="пустых текстов"):
+        assert len(load_dataset(path)) == len(df)

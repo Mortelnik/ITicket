@@ -8,6 +8,8 @@ build/
 
 # Data: CSV не хранится в git (25 МБ), качается scripts/download_data.sh
 data/*.csv
+data/*.download
+.review-tmp*/
 
 # Coverage
 .coverage

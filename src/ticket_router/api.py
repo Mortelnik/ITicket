@@ -9,8 +9,10 @@
 
 from __future__ import annotations
 
+import math
+import threading
 import time
-from collections import Counter
+from collections import Counter, deque
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, Request
@@ -18,12 +20,14 @@ from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
 
 from . import __version__
-from .predict import load_model, model_path, predict_queue
+from .predict import InvalidTicketError, UnsupportedTextError, load_model, model_path, predict_queue
 from .webui import HTML_PAGE
 
 _stats: Counter = Counter()  # requests_total, errors_4xx, errors_5xx, predictions_total
 _queue_dist: Counter = Counter()
 _started_at = time.time()
+_latencies: deque[float] = deque(maxlen=1000)
+_metrics_lock = threading.Lock()
 
 
 @asynccontextmanager
@@ -44,18 +48,32 @@ app = FastAPI(title="ticket-router API", version=__version__, lifespan=lifespan)
 @app.middleware("http")
 async def count_requests(request: Request, call_next):
     """Учебные технические метрики: запросы и ошибки по классам статусов."""
-    _stats["requests_total"] += 1
-    response = await call_next(request)
-    if 400 <= response.status_code < 500:
-        _stats["errors_4xx"] += 1
-    elif response.status_code >= 500:
-        _stats["errors_5xx"] += 1
+    started = time.perf_counter()
+    with _metrics_lock:
+        _stats["requests_total"] += 1
+    try:
+        response = await call_next(request)
+    except Exception:
+        with _metrics_lock:
+            _stats["errors_5xx"] += 1
+        raise
+    else:
+        with _metrics_lock:
+            if 400 <= response.status_code < 500:
+                _stats["errors_4xx"] += 1
+            elif response.status_code >= 500:
+                _stats["errors_5xx"] += 1
+            if request.url.path == "/predict" and response.status_code == 422:
+                _stats["rejected_inputs_total"] += 1
+    finally:
+        with _metrics_lock:
+            _latencies.append((time.perf_counter() - started) * 1000)
     return response
 
 
 class TicketIn(BaseModel):
-    subject: str = Field(default="", description="Тема обращения")
-    body: str = Field(description="Текст обращения (обязательное поле)")
+    subject: str = Field(default="", max_length=300, description="Тема обращения, EN/DE")
+    body: str = Field(default="", max_length=20_000, description="Текст обращения, EN/DE")
 
 
 class PredictOut(BaseModel):
@@ -94,14 +112,22 @@ def ready() -> dict:
 @app.get("/metrics")
 def metrics() -> dict:
     """Учебные технические и модельные метрики (см. docs/deployment_monitoring.md)."""
-    total = max(_stats["requests_total"], 1)
+    with _metrics_lock:
+        stats = _stats.copy()
+        queues = dict(_queue_dist)
+        durations = sorted(_latencies)
+    total = max(stats["requests_total"], 1)
     return {
-        "requests_total": _stats["requests_total"],
-        "errors_4xx": _stats["errors_4xx"],
-        "errors_5xx": _stats["errors_5xx"],
-        "error_rate": round((_stats["errors_4xx"] + _stats["errors_5xx"]) / total, 4),
-        "predictions_total": _stats["predictions_total"],
-        "predicted_queues": dict(_queue_dist),
+        "requests_total": stats["requests_total"],
+        "errors_4xx": stats["errors_4xx"],
+        "errors_5xx": stats["errors_5xx"],
+        "error_rate": round((stats["errors_4xx"] + stats["errors_5xx"]) / total, 4),
+        "predictions_total": stats["predictions_total"],
+        "predicted_queues": queues,
+        "rejected_inputs_total": stats["rejected_inputs_total"],
+        "unsupported_texts_total": stats["unsupported_texts_total"],
+        "latency_sample_size": len(durations),
+        "latency_p95_ms": round(durations[math.ceil(len(durations) * 0.95) - 1], 2) if durations else None,
     }
 
 
@@ -113,8 +139,13 @@ def predict(ticket: TicketIn) -> PredictOut:
         raise HTTPException(status_code=503, detail="Модель не загружена")
     try:
         result = predict_queue(ticket.subject, ticket.body)
-    except ValueError as exc:
+    except UnsupportedTextError as exc:
+        with _metrics_lock:
+            _stats["unsupported_texts_total"] += 1
         raise HTTPException(status_code=422, detail=str(exc)) from exc
-    _stats["predictions_total"] += 1
-    _queue_dist[result["queue"]] += 1
+    except InvalidTicketError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    with _metrics_lock:
+        _stats["predictions_total"] += 1
+        _queue_dist[result["queue"]] += 1
     return PredictOut(queue=result["queue"], confidence=result.get("confidence"))

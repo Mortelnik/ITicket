@@ -1,0 +1,46 @@
+{
+  "hard_checks_passed": true,
+  "data_sha256": "f187c090e59581c2bbf3aa1377c8db4dd647464ecf2ae51bf8966e42e0ed6bc0",
+  "rows": 28587,
+  "missing_subject": 3838,
+  "missing_body": 0,
+  "languages": {
+    "en": 16338,
+    "de": 12249
+  },
+  "queues": {
+    "Technical Support": 8362,
+    "Product Support": 5252,
+    "Customer Service": 4268,
+    "IT Support": 3433,
+    "Billing and Payments": 2788,
+    "Returns and Exchanges": 1437,
+    "Service Outages and Maintenance": 1148,
+    "Sales and Pre-Sales": 918,
+    "Human Resources": 576,
+    "General Inquiry": 405
+  },
+  "split_sizes": {
+    "train": 20010,
+    "val": 4288,
+    "test": 4289
+  },
+  "text_overlaps": {
+    "train_val": {
+      "exact": 0,
+      "normalized": 0
+    },
+    "train_test": {
+      "exact": 0,
+      "normalized": 1
+    },
+    "val_test": {
+      "exact": 0,
+      "normalized": 0
+    }
+  },
+  "warnings": [
+    "train/test: совпадающих текстов после lower/whitespace: 1"
+  ],
+  "note": "Нормализованные совпадения — остаточный риск; near-duplicates этим аудитом не исключаются."
+}
