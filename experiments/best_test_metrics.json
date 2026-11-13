@@ -1,0 +1,81 @@
+{
+  "best_experiment": "tfidf_wordchar_svc_tuned",
+  "test_macro_f1": 0.6185,
+  "test_weighted_f1": 0.622,
+  "test_accuracy": 0.6228,
+  "classification_report": {
+    "Billing and Payments": {
+      "precision": 0.8197115384615384,
+      "recall": 0.8157894736842105,
+      "f1-score": 0.8177458033573142,
+      "support": 418.0
+    },
+    "Customer Service": {
+      "precision": 0.5440494590417311,
+      "recall": 0.5491419656786272,
+      "f1-score": 0.546583850931677,
+      "support": 641.0
+    },
+    "General Inquiry": {
+      "precision": 0.7428571428571429,
+      "recall": 0.4262295081967213,
+      "f1-score": 0.5416666666666666,
+      "support": 61.0
+    },
+    "Human Resources": {
+      "precision": 0.7241379310344828,
+      "recall": 0.4883720930232558,
+      "f1-score": 0.5833333333333334,
+      "support": 86.0
+    },
+    "IT Support": {
+      "precision": 0.545631067961165,
+      "recall": 0.545631067961165,
+      "f1-score": 0.545631067961165,
+      "support": 515.0
+    },
+    "Product Support": {
+      "precision": 0.5676691729323309,
+      "recall": 0.5748730964467005,
+      "f1-score": 0.5712484237074401,
+      "support": 788.0
+    },
+    "Returns and Exchanges": {
+      "precision": 0.6777777777777778,
+      "recall": 0.5648148148148148,
+      "f1-score": 0.6161616161616161,
+      "support": 216.0
+    },
+    "Sales and Pre-Sales": {
+      "precision": 0.6372549019607843,
+      "recall": 0.4744525547445255,
+      "f1-score": 0.5439330543933054,
+      "support": 137.0
+    },
+    "Service Outages and Maintenance": {
+      "precision": 0.7974683544303798,
+      "recall": 0.7325581395348837,
+      "f1-score": 0.7636363636363637,
+      "support": 172.0
+    },
+    "Technical Support": {
+      "precision": 0.6253623188405797,
+      "recall": 0.6876494023904383,
+      "f1-score": 0.6550284629981025,
+      "support": 1255.0
+    },
+    "accuracy": 0.6227558871531825,
+    "macro avg": {
+      "precision": 0.6681919665297913,
+      "recall": 0.5859512116475342,
+      "f1-score": 0.6184968643146984,
+      "support": 4289.0
+    },
+    "weighted avg": {
+      "precision": 0.6255506577412406,
+      "recall": 0.6227558871531825,
+      "f1-score": 0.6219505709060907,
+      "support": 4289.0
+    }
+  }
+}

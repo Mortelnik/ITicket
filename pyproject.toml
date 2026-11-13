@@ -1,0 +1,29 @@
+[project]
+name = "ticket-router"
+version = "0.1.0"
+description = "Классификация обращений IT-поддержки по очередям (queue) для маршрутизации"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.162.0",
+    "joblib>=1.6.0",
+    "pandas>=3.1.0",
+    "scikit-learn>=1.9.1",
+    "uvicorn>=0.54.0",
+]
+
+[project.scripts]
+ticket-router = "ticket_router.cli:main"
+ticket-router-train = "ticket_router.train:main"
+
+[build-system]
+requires = ["uv_build>=0.10.12,<0.11.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "matplotlib>=3.11.2",
+    "pytest>=9.2.0",
+    "pytest-cov>=7.1.0",
+]

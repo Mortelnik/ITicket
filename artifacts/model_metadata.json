@@ -1,0 +1,22 @@
+{
+  "best_experiment": "tfidf_wordchar_svc_tuned",
+  "data_sha256": "f187c090e59581c2bbf3aa1377c8db4dd647464ecf2ae51bf8966e42e0ed6bc0",
+  "data_source": "Kaggle: tobiasbueck/multilingual-customer-support-tickets v10 (зеркало GitHub: CHANDRADEEP2007/feedback-to-backlog-ai-copilot)",
+  "classes": [
+    "Billing and Payments",
+    "Customer Service",
+    "General Inquiry",
+    "Human Resources",
+    "IT Support",
+    "Product Support",
+    "Returns and Exchanges",
+    "Sales and Pre-Sales",
+    "Service Outages and Maintenance",
+    "Technical Support"
+  ],
+  "n_train": 20010,
+  "random_state": 42,
+  "test_macro_f1": 0.6185,
+  "test_weighted_f1": 0.622,
+  "test_accuracy": 0.6228
+}

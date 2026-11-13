@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+dist/
+build/
+
+# Data: CSV не хранится в git (25 МБ), качается scripts/download_data.sh
+data/*.csv
+
+# Coverage
+.coverage
+htmlcov/
+.pytest_cache/
+
+# OS
+.DS_Store
+
+# Модель — хранится в git как артефакт демо (16 МБ, осознанное решение,
+# описанное в README). Раскомментируйте, если размер станет проблемой:
+# artifacts/*.joblib

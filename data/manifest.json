@@ -1,0 +1,12 @@
+{
+  "dataset": "Customer IT Support - Ticket Dataset",
+  "author": "Tobias Bueck",
+  "source_kaggle": "https://www.kaggle.com/datasets/tobiasbueck/multilingual-customer-support-tickets",
+  "source_version": "10",
+  "file": "aa_dataset-tickets-multi-lang-5-2-50-version.csv",
+  "rows": 28587,
+  "sha256": "f187c090e59581c2bbf3aa1377c8db4dd647464ecf2ae51bf8966e42e0ed6bc0",
+  "download_mirror": "https://raw.githubusercontent.com/CHANDRADEEP2007/feedback-to-backlog-ai-copilot/main/data/aa_dataset-tickets-multi-lang-5-2-50-version.csv",
+  "license": "CC BY 4.0",
+  "note": "Датасет синтетический; CSV в git не хранится — скачивается scripts/download_data.sh с проверкой sha256."
+}
