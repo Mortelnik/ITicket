@@ -10,25 +10,31 @@ Billing and Payments и др.
 
 ## Общая схема
 
-```text
-                ┌──────────────────────────────────────────────┐
-                │  Offline: обучение (train.py)                 │
-                │                                              │
-  CSV 28 587 ──▶│  валидация → стратифицированный split        │
-  тикетов       │  (70/15/15, seed=42, splits.json)            │
-                │  → 5 конфигураций (experiments.py)           │
-                │  → выбор по val → финальный тест → артефакт   │
-                └───────────────┬──────────────────────────────┘
-                                │ artifacts/model.joblib
-                                │ (единый pipeline: TF-IDF + LinearSVC)
-                                ▼
-  ┌─────────────────────────────────────────────────────────────┐
-  │  Online: сервис (api.py, FastAPI)                           │
-  │                                                            │
-  │  subject + body → лимиты → проверка текста → TF-IDF        │
-  │  → ненулевые признаки → LinearSVC → queue → JSON          │
-  │  Кириллица / нулевые признаки → 422, очередь не назначена  │
-  └─────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph offline["Offline: обучение — train.py"]
+        csv["CSV: 28 587 тикетов"] --> validation["Валидация данных"]
+        validation --> split["Стратифицированный split 70/15/15<br/>seed=42, splits.json"]
+        split --> experiments["5 конфигураций — experiments.py<br/>Обучение только на train"]
+        experiments --> selection["Выбор по val macro-F1"]
+        selection --> test["Финальная оценка на test"]
+        test --> artifact["artifacts/model.joblib<br/>Единый pipeline: TF-IDF + LinearSVC"]
+    end
+
+    subgraph online["Online: сервис — api.py, FastAPI"]
+        input["POST /predict: subject + body"] --> limits{"Лимиты длины соблюдены?"}
+        limits -->|Да| text{"Текст непустой и без кириллицы?"}
+        limits -->|Нет| rejected["HTTP 422<br/>Очередь не назначена"]
+        text -->|Нет| rejected
+        text -->|Да| tfidf["TF-IDF"]
+        tfidf --> features{"Есть ненулевые признаки?"}
+        features -->|Нет| rejected
+        features -->|Да| classifier["LinearSVC"]
+        classifier --> response["JSON: queue, confidence: null"]
+    end
+
+    artifact -.->|Загрузка при старте| tfidf
+    artifact -.->|Загрузка при старте| classifier
 ```
 
 ## Компоненты

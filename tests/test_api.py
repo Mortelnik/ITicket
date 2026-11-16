@@ -14,8 +14,14 @@ from fastapi.testclient import TestClient
 from ticket_router import api as api_module
 from ticket_router import predict as predict_module
 from ticket_router.api import app
+from ticket_router.security import RequestGuard
 
 ARTIFACT = pathlib.Path("artifacts/model.joblib")
+
+
+@pytest.fixture(autouse=True)
+def reset_request_guard(monkeypatch):
+    monkeypatch.setattr(api_module, "_request_guard", RequestGuard())
 
 
 @pytest.fixture

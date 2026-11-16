@@ -39,7 +39,7 @@ src/ticket_router/
 tests/                        ← тесты данных, пайплайна, сохранённой модели и API
 experiments/                  ← results.csv, splits.json, метрики, матрица ошибок
 artifacts/                    ← model.joblib + model_metadata.json
-docs/                         ← architecture, api, test_plan, deployment_monitoring, ai_usage, report
+docs/                         ← model_card, architecture, api, test_plan, deployment_monitoring, ai_usage, report
 data/                         ← manifest.json (CSV не в git)
 scripts/download_data.py      ← загрузка данных с SHA256, Windows/Linux
 scripts/check_data.py         ← аудит данных и сохранённых выборок
@@ -65,7 +65,7 @@ uv run ticket-router-train
 uv run pytest -q
 
 # 5. Сервис (веб-демо откроется на http://localhost:8000/)
-uv run uvicorn ticket_router.api:app --port 8000
+uv run uvicorn ticket_router.api:app --port 8000 --no-proxy-headers
 curl -X POST localhost:8000/predict -H 'Content-Type: application/json' \
   -d '{"subject":"Login failed","body":"Cannot log into my account, error 500"}'
 # → {"queue":"IT Support","confidence":null}
@@ -150,6 +150,7 @@ docker rm iticket
 
 - [Черновик отчёта — заменить перед сдачей](docs/report.md)
 - [Архитектура](docs/architecture.md) · [Контракт API](docs/api.md)
+- [Model card — паспорт модели](docs/model_card.md)
 - [Тест-план и найденные проблемы](docs/test_plan.md)
 - [Деплой и мониторинг](docs/deployment_monitoring.md)
 - [Использование ИИ-ассистентов](docs/ai_usage.md)

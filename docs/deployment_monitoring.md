@@ -7,7 +7,7 @@
 ```bash
 uv sync --locked
 uv run pytest -q
-uv run uvicorn ticket_router.api:app --host 127.0.0.1 --port 8000
+uv run uvicorn ticket_router.api:app --host 127.0.0.1 --port 8000 --no-proxy-headers
 ```
 
 Модель входит в репозиторий. CSV нужен только для обучения и воспроизведения
@@ -43,9 +43,7 @@ docker stop iticket
 docker rm iticket
 ```
 
-Локально Docker Engine недоступен. Сборка/запуск контейнера не подтверждены;
-проверка uvicorn не выдаётся за проверку Docker. В GitHub Actions добавлены
-сборка, запуск контейнера и HTTP smoke-тест. Успешный удалённый CI нужно
+В GitHub Actions добавлены сборка, запуск контейнера и HTTP smoke-тест. Успешный удалённый CI нужно
 подтвердить после публикации изменений.
 
 Docker healthcheck помечает контейнер unhealthy, но сам по себе не
@@ -70,11 +68,19 @@ Docker healthcheck помечает контейнер unhealthy, но сам п
 
 ## Реализованные метрики
 
+В API включён лимит 60 запросов за 60 секунд на IP (429 с `Retry-After`)
+и пустой ответ 444 для URL секретов. Настройки и область фильтра описаны
+в [контракте API](api.md). Квоты хранятся в ограниченной памяти одного процесса;
+это не защита от распределённой атаки на канал связи. Docker отключает доверие
+к proxy-заголовкам. При добавлении reverse proxy доверять нужно только его
+адресам, а общий лимит между репликами обеспечивать отдельно.
+
 /metrics отдаёт JSON в памяти одного процесса:
 
 - requests_total, errors_4xx, errors_5xx, error_rate;
 - predictions_total и predicted_queues;
 - rejected_inputs_total и unsupported_texts_total;
+- secret_requests_total и rate_limited_requests_total;
 - latency_p95_ms по последним максимум 1000 завершённым запросам,
   latency_sample_size.
 

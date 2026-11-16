@@ -16,11 +16,12 @@ from collections import Counter, deque
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse, Response
 from pydantic import BaseModel, Field
 
 from . import __version__
 from .predict import InvalidTicketError, UnsupportedTextError, load_model, model_path, predict_queue
+from .security import RequestGuard, is_secret_path
 from .webui import HTML_PAGE
 
 _stats: Counter = Counter()  # requests_total, errors_4xx, errors_5xx, predictions_total
@@ -28,6 +29,7 @@ _queue_dist: Counter = Counter()
 _started_at = time.time()
 _latencies: deque[float] = deque(maxlen=1000)
 _metrics_lock = threading.Lock()
+_request_guard = RequestGuard.from_env()
 
 
 @asynccontextmanager
@@ -52,7 +54,25 @@ async def count_requests(request: Request, call_next):
     with _metrics_lock:
         _stats["requests_total"] += 1
     try:
-        response = await call_next(request)
+        if is_secret_path(request.url.path):
+            with _metrics_lock:
+                _stats["secret_requests_total"] += 1
+            response = Response(status_code=444)
+        else:
+            # Заголовки Forwarded/X-Forwarded-For здесь не читаются: адрес
+            # клиента устанавливает ASGI-сервер с учётом доверенных proxy.
+            client = request.client.host if request.client else "unknown"
+            retry_after = _request_guard.retry_after(client)
+            if retry_after:
+                with _metrics_lock:
+                    _stats["rate_limited_requests_total"] += 1
+                response = JSONResponse(
+                    status_code=429,
+                    content={"detail": "Слишком много запросов. Повторите позже."},
+                    headers={"Retry-After": str(retry_after)},
+                )
+            else:
+                response = await call_next(request)
     except Exception:
         with _metrics_lock:
             _stats["errors_5xx"] += 1
@@ -126,6 +146,8 @@ def metrics() -> dict:
         "predicted_queues": queues,
         "rejected_inputs_total": stats["rejected_inputs_total"],
         "unsupported_texts_total": stats["unsupported_texts_total"],
+        "secret_requests_total": stats["secret_requests_total"],
+        "rate_limited_requests_total": stats["rate_limited_requests_total"],
         "latency_sample_size": len(durations),
         "latency_p95_ms": round(durations[math.ceil(len(durations) * 0.95) - 1], 2) if durations else None,
     }
